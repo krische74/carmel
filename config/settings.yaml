@@ -1,0 +1,278 @@
+# Carmel Configuration
+# Non-secret settings. Secrets go in .env (never committed).
+
+app:
+  name: "Carmel"
+  version: "0.1.0"
+  environment: "development"  # development | paper | live
+
+data:
+  default_provider: "yfinance"
+  cache_dir: "data/cache"
+  parquet_dir: "data/parquet"
+
+  # Default universe for momentum strategy
+  universe:
+    - SPY
+    - QQQ
+    - TLT
+    - GLD
+
+  # DCA targets
+  dca_targets:
+    - symbol: VOO
+      weight: 0.6
+    - symbol: VXUS
+      weight: 0.3
+    - symbol: BND
+      weight: 0.1
+
+  # OHLCV validation: outlier z-score logs warnings only (does not reject ingest)
+  ohlcv_outlier_zscore_threshold: 4.0
+  ohlcv_min_prior_for_zscore: 20
+  # Hard cap on daily absolute return (|close[t]/close[t-1]-1|); reject likely feed errors
+  ohlcv_max_abs_daily_return: 0.5
+  # Skip max_abs_daily_return for these symbols (e.g. ^VIX — large single-day moves are normal)
+  validation_exempt_symbols:
+    - "^VIX"
+  # First-time ingest of a symbol: years of history when no Parquet file exists (0 = off)
+  initial_backfill_years: 20
+
+# Broker: pick ONE mode — (A) legacy single account, or (B) broker.accounts list.
+# (A) Omit broker.accounts; set ALPACA_API_KEY + ALPACA_SECRET_KEY in .env. Optional
+#     default_account labels the hub row (else SQLite uses "default").
+# (B) Uncomment accounts: each line needs matching *_KEY / *_SECRET vars in .env
+#     (see .env.example). Runner runs one trading cycle per account, sequentially.
+broker:
+  provider: "alpaca"
+  paper_trading: true
+  # Optional hub partition label when using legacy ALPACA_API_KEY / ALPACA_SECRET_KEY
+  # (single-account mode). If unset, the hub uses "default".
+  # default_account: "Main"
+  #
+  # Multi-account (optional): each entry names an account; API keys live only in .env,
+  # referenced by api_key_env / api_secret_env. Leave the list absent or empty for
+  # legacy single-account mode.
+  # accounts:
+  #   - name: "Main"
+  #     account_type: "brokerage"
+  #     api_key_env: "ALPACA_ACCOUNT_MAIN_KEY"
+  #     api_secret_env: "ALPACA_ACCOUNT_MAIN_SECRET"
+  #   - name: "IRA"
+  #     account_type: "ira_traditional"
+  #     api_key_env: "ALPACA_ACCOUNT_IRA_KEY"
+  #     api_secret_env: "ALPACA_ACCOUNT_IRA_SECRET"
+
+tax:
+  harvest_enabled: false
+  harvest_threshold_pct: 0.05
+  harvest_min_loss_dollars: 50.0
+  lot_selection_method: fifo  # fifo | hifo
+  # Wash-sale ±window in calendar days (IRS default 30; widen for conservative review)
+  wash_sale_window_days: 30
+  replacement_map:
+    SPY: IVV
+    QQQ: QQQM
+    TLT: VGLT
+
+# CLI backtest: skip first N union-calendar days before equity / rebalances (indicator warm-up)
+backtest:
+  warmup_bars: 0
+  # Fraction of expected trading days that must fall in [start,end] (0 = disable coverage check)
+  min_coverage_ratio: 0.8
+  # Historical 3-month T-bill (FRED) for cash accrual + excess Sharpe; flat pct is fallback only
+  cash_yield_series_id: DTB3
+  cash_yield_annual_pct: 4.0
+  benchmark_symbol: SPY
+
+regime:
+  enabled: true
+  vix_symbol: "^VIX"
+  fred_series: ["DGS10", "DGS2"]
+  yield_curve_flat_threshold: 0.5
+  yield_curve_inverted_threshold: -0.5
+  vix_low: 15.0
+  vix_normal: 20.0
+  vix_elevated: 30.0
+  sizing_adjustment:
+    risk_on: 1.0
+    cautious: 0.75
+    defensive: 0.5
+    crisis: 0.25
+
+fundamental:
+  enabled: false
+  refresh_interval_days: 30
+  max_symbols_per_cycle: 12
+  # skip_symbols: ETFs / funds (no 10-K); extend in YAML if needed
+
+llm:
+  enabled: false
+  base_url: "http://localhost:11434"
+  model: "llama3.2"
+  timeout_seconds: 30
+  max_tokens: 512
+  temperature: 0.3
+
+rag:
+  enabled: false
+  index_paths:
+    - docs
+    - AGENTS.md
+  top_k: 5
+  embedding_model: ""  # empty = same as llm.model
+
+# Experimental: offline train (carmel ml-train), cycle scores in SQLite when enabled.
+# Set affect_orders: true to drop signals below score_threshold (uses latest ml_scores batch).
+ml:
+  enabled: false
+  affect_orders: false
+  score_threshold: 0.5
+  missing_score_action: pass  # pass | block — when no score exists for a symbol
+  model_path: "data/ml/momentum_model.joblib"
+  label_horizon_days: 5
+  min_train_rows: 80
+  model_version: "1"
+  retraining_lookback_days: 365
+  max_model_age_days: 30
+
+strategy:
+  # mean_reversion intentionally disabled (Tier 44A): as-configured it contributed
+  # +0.16% over 3.2 years and has two structural bugs (no live exit path; momentum
+  # rotation would bulldoze its positions). Parameter block below is kept for a future
+  # redesign tier. See BUILD_STATE.md tech debt.
+  enabled:
+    - momentum
+    - dca
+
+  # Momentum rotation parameters
+  momentum:
+    lookback_months: [1, 3, 6, 12]
+    sma_filter_period: 200  # days
+    cash_symbol: "SHV"
+    rebalance_frequency: "weekly"
+    adx_filter_period: 14
+    adx_threshold: 25.0
+    # Regime-aware ADX: risk_on → lower threshold (weaker trend OK); defensive/crisis → higher.
+    # Optional per-regime overrides (float) replace deltas below when set:
+    # adx_threshold_risk_on: null
+    # adx_threshold_cautious: null
+    # adx_threshold_defensive: null
+    # adx_threshold_crisis: null
+    adx_threshold_risk_on_delta: 2.0
+    adx_threshold_defensive_delta: 3.0
+    adx_threshold_crisis_delta: 5.0
+
+  # DCA parameters (Tier 45B: weekly Mondays at 2.5% — same weekly deployment rate as
+  # the prior 0.5%/day drip, but legs clear the $5 min_order_notional_usd floor at small account sizes).
+  # Accepted edge: crisis multiplier 0.25 can still floor-skip the BND leg (~$2); don't engineer around it.
+  dca:
+    frequency: "weekly"        # Mondays (_is_dca_day); was daily
+    amount: 100.0  # fallback when percent_of_equity is unset
+    percent_of_equity: 0.025   # was 0.005/day; 2.5%/week preserves the same deployment rate
+    regime_amount_risk_on: 1.0
+    regime_amount_cautious: 0.75
+    regime_amount_defensive: 0.5
+    regime_amount_crisis: 0.25
+
+  # Mean reversion: see module docstring in src/strategy/mean_reversion.py — positions
+  # unwind when oversold clears (no long signal), not only on overbought.
+  mean_reversion:
+    bb_period: 20
+    bb_num_std: 2.0
+    rsi_period: 14
+    rsi_oversold: 30.0
+    rsi_overbought: 70.0
+    sma_trend_period: 200
+    max_positions: 4
+    regime_max_positions_risk_on: 4
+    regime_max_positions_cautious: 3
+    regime_max_positions_defensive: 2
+    regime_max_positions_crisis: 1
+    universe:
+      - SPY
+      - QQQ
+      - TLT
+      - GLD
+
+  # Tactical ensemble: merge momentum + mean reversion longs before ML gate / execution.
+  ensemble:
+    enabled: false
+    strategy_weights:
+      MomentumRotationStrategy: 0.5
+      MeanReversionStrategy: 0.5
+    cash_signal_penalty: 0.5
+    min_blended_weight: 0.05
+
+risk:
+  max_position_pct: 0.25       # max 25% in any single position
+  max_portfolio_risk_pct: 0.02 # risk 2% of portfolio per trade
+  daily_loss_limit_pct: 0.03   # kill switch at 3% daily loss
+  min_cash_reserve_pct: 0.05   # keep 5% in cash
+  pdt_protection: true         # enforce PDT awareness for <$25k
+  pdt_threshold: 4             # FINRA pattern day trader rule (day trades / 5 business days)
+  pdt_equity_floor: 25000.0    # accounts at or above this skip PDT count limits
+  sizing_method: fixed_weight  # fixed_weight | atr_risk_parity
+  atr_risk_pct: 0.01           # equity fraction at risk per position (ATR mode)
+  atr_period: 14               # ATR lookback for sizing
+  min_order_notional_usd: 5.0  # skip live buy orders below this notional (post-delta)
+
+execution:
+  default_order_type: "market"  # market | limit
+  limit_offset_bps: 10.0
+  stop_loss_enabled: false
+  stop_loss_pct: 5.0
+  unfilled_timeout_minutes: 30
+
+# Idle-cash sweep into a short-term T-bill ETF (cash management, not a strategy).
+# symbol MUST stay outside the momentum universe (data.universe + momentum.cash_symbol)
+# or config validation fails — rotation would otherwise liquidate the swept position.
+cash_sweep:
+  enabled: true
+  symbol: "BIL"          # short-term T-bill ETF; NOT SHV (that is momentum's cash parking)
+  buffer_pct: 0.02       # cash kept above the hard reserve to fund routine DCA legs
+  min_trade_usd: 50.0    # minimum sweep buy/sell; reserve-restore sells ignore this floor
+
+scheduler:
+  # Cron uses scheduler.timezone (IANA). Default UTC matches Docker; set US/Eastern for local ET.
+  timezone: "UTC"  # IANA: UTC, US/Eastern, Europe/London
+  # Cron expressions use the scheduler process timezone (often UTC in Docker unless TZ is set).
+  # Local dev on US Eastern: these times align with after-close / Friday extras; in UTC-only
+  # containers they run at the same clock numbers (17:00 UTC ≠ 5 PM ET).
+  data_ingestion_cron: "0 17 * * 1-5"   # Weekday 17:00 in scheduler TZ (see comment above)
+  signal_generation_cron: "30 17 * * 1-5"
+  rebalance_check_cron: "0 18 * * 5"    # Friday 18:00 in scheduler TZ (extra run_cycle)
+  heartbeat_interval_seconds: 60
+  reconcile_cron: ""  # set e.g. "0 19 * * 5" for weekly Friday 7 PM reconciliation
+  digest_cron: ""  # set e.g. "0 9 * * 1" for Monday 9 AM weekly digest (scheduler TZ)
+  ml_retraining_cron: ""  # e.g. "0 2 * * 0" Sunday 2 AM; requires ml.enabled
+  liveness_cron: "0 13 * * *"  # daily "Carmel is alive" ping (scheduler TZ); empty = off
+  execution_retry:
+    max_attempts: 2
+    backoff_base_seconds: 0.5
+    use_jitter: true
+  log_rotation:
+    max_bytes: 10485760
+    backup_count: 5
+  reconciliation_warning_threshold: 1
+  reconciliation_critical_threshold: 5
+
+dashboard:
+  port: 8501
+  refresh_interval_seconds: 30
+  auth_enabled: false
+  auth_password: ""   # prefer DASHBOARD_PASSWORD in .env
+
+notification:
+  # Webhook URL: NOTIFICATION__WEBHOOK_URL in .env (do not put URLs in YAML).
+  # Telegram: NOTIFICATION__TELEGRAM_CHAT_ID when using api.telegram.org sendMessage URL.
+  # Omit ``enabled`` / ``webhook_url`` here if you want NOTIFICATION__* env vars to apply.
+  timeout_seconds: 10
+  max_retries: 2
+  backoff_seconds: 1.0
+  email_enabled: false
+  smtp_host: ""
+  smtp_port: 587
+  smtp_use_tls: true
+  email_from: ""
+  email_to: []

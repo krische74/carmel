@@ -1,0 +1,27 @@
+# Security and image size — keep secrets and dev cruft out of Docker build context
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.venv
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+data
+logs
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.coverage
+htmlcov
+dist
+build
+*.egg-info
+.idea
+.vscode
+.cursor/
+docs/research/
+tests/

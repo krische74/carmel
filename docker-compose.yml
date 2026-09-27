@@ -1,0 +1,89 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+
+  trader:
+    build: .
+    command: ["python", "-m", "src.automation.runner", "run"]
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from pathlib import Path; from datetime import datetime, UTC; p = Path('/app/logs/hub.heartbeat'); assert p.exists(); t = datetime.fromisoformat(p.read_text().strip()); t = t.replace(tzinfo=UTC) if t.tzinfo is None else t.astimezone(UTC); assert (datetime.now(UTC) - t).total_seconds() < 300",
+        ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  dashboard:
+    build: .
+    command: ["streamlit", "run", "src/dashboard/app.py", "--server.port=8501", "--server.headless=true"]
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+    restart: unless-stopped
+    depends_on:
+      trader:
+        condition: service_healthy
+
+  api:
+    build: .
+    command: ["python", "-m", "src.automation.runner", "serve"]
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      trader:
+        condition: service_healthy
+
+volumes:
+  ollama_data:

@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# uv
+.python-version
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# Environment & secrets
+.env
+.env.local
+*.key
+credentials.json
+secrets.yaml
+
+# Data files (too large for git)
+data/raw/
+data/cache/
+data/parquet/
+*.parquet
+*.h5
+*.hdf5
+
+# Database
+*.db
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temp
+tmp/
+temp/
+
+# Test / Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Docker
+*.pid
+
+# Agent mailbox runtime (scripts + PROTOCOL.md stay tracked)
+.agents/mailbox/to_woebbe.md
+.agents/mailbox/to_cursor.md
+.agents/mailbox/state.json
+.agents/mailbox/state.lock
+.agents/mailbox/HALT
+.agents/mailbox/log/
+
+# Scratch / delete queue (local only)
+_to_delete/
+
+# Claude Code machine-local settings
+.claude/
+

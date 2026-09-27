@@ -1,0 +1,45 @@
+# Line-ending policy for Carmel.
+#
+# Everything in this repo is text, and everything ultimately runs in a Linux
+# container. Normalizing to LF in the repository keeps the tree identical
+# whether it is touched from Windows, from Docker, or from a mounted Linux VM.
+#
+# Added 2026-08-20 after `git status` reported 260 files modified with
+# 48,438 insertions and 48,438 deletions — identical counts, i.e. pure CRLF/LF
+# churn with no content change. Without this file, that churn can be committed
+# accidentally and will bury a real diff.
+
+* text=auto eol=lf
+
+# Explicit per-type declarations so the intent survives future tooling changes.
+*.py            text eol=lf
+*.md            text eol=lf
+*.txt           text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.toml          text eol=lf
+*.jsonl         text eol=lf
+*.lock          text eol=lf
+*.gitkeep       text eol=lf
+Dockerfile      text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+.dockerignore   text eol=lf
+.env.example    text eol=lf
+
+# Binary — never normalize, never diff as text.
+# These are gitignored today; declaring them means an accidental `git add -f`
+# cannot corrupt them.
+*.parquet   binary
+*.sqlite    binary
+*.sqlite3   binary
+*.db        binary
+*.joblib    binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.xlsx      binary

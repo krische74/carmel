@@ -1,0 +1,51 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  json:
+    class: pythonjsonlogger.json.JsonFormatter
+    format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+  console:
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: console
+    stream: ext://sys.stdout
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: logs/carmel.log
+    maxBytes: 10485760  # 10 MB
+    backupCount: 5
+    encoding: utf-8
+
+root:
+  level: INFO
+  handlers: [console, file]
+
+loggers:
+  src.data:
+    level: INFO
+  src.strategy:
+    level: INFO
+  src.execution:
+    level: INFO
+  src.risk:
+    level: WARNING
+  src.automation:
+    level: INFO
+  uvicorn:
+    level: WARNING
+  # APScheduler's executor emits two INFO lines per job firing ("Running job"
+  # / "Job executed successfully"). The heartbeat job fires every minute,
+  # which produced ~99.8% of all log volume (14k of 14.6k lines/5 days) and
+  # buried real signals. Cron-triggered jobs already log application-level
+  # messages from src.automation/__main__; the executor logs were redundant.
+  # Missed-job warnings and exceptions still surface at WARNING/ERROR.
+  apscheduler.executors.default:
+    level: WARNING
