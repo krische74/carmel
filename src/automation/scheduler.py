@@ -35,13 +35,20 @@ def scheduler_timezone_from_settings(settings: Settings) -> ZoneInfo:
 # translate between them. Rewriting numeric tokens to day names is the only
 # unambiguous way to preserve Unix semantics in config like "30 17 * * 1-5".
 _UNIX_DOW_TO_NAME = {
-    "0": "sun", "1": "mon", "2": "tue", "3": "wed",
-    "4": "thu", "5": "fri", "6": "sat", "7": "sun",
+    "0": "sun",
+    "1": "mon",
+    "2": "tue",
+    "3": "wed",
+    "4": "thu",
+    "5": "fri",
+    "6": "sat",
+    "7": "sun",
 }
 
 
 def _translate_unix_day_of_week(field: str) -> str:
     """Rewrite numeric Unix-cron dow tokens to APScheduler-safe day names."""
+
     def xlate(tok: str) -> str:
         tok = tok.strip()
         return _UNIX_DOW_TO_NAME.get(tok, tok)

@@ -58,9 +58,7 @@ def generate_lot_ledger_alerts(result: LotReconciliationResult) -> list[Alert]:
     out: list[Alert] = []
     if result.qty_mismatches > 0:
         bad = [e for e in result.entries if e.status == "qty_mismatch"]
-        parts = [
-            f"{e.symbol}: ledger={e.ledger_qty:.4f} broker={e.broker_qty:.4f}" for e in bad
-        ]
+        parts = [f"{e.symbol}: ledger={e.ledger_qty:.4f} broker={e.broker_qty:.4f}" for e in bad]
         detail = "; ".join(parts)
         out.append(
             Alert(
@@ -85,4 +83,3 @@ def generate_lot_ledger_alerts(result: LotReconciliationResult) -> list[Alert]:
             ),
         )
     return out
-

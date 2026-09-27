@@ -18,17 +18,14 @@ jobs:
         with:
           version: "latest"
 
-      - name: Set up Python
-        run: uv python install 3.12
-
       - name: Install dependencies
-        run: uv pip install --system ".[dev,ml]"
+        run: uv sync --locked --python 3.12 --extra dev --extra ml
 
       - name: Lint with ruff
-        run: ruff check src/ tests/
+        run: uv run ruff check src/ tests/
 
       - name: Format check with ruff
-        run: ruff format --check src/ tests/
+        run: uv run ruff format --check src/ tests/
 
       - name: Run tests
-        run: pytest --cov=src --cov-report=term-missing -v
+        run: uv run pytest --cov=src --cov-report=term-missing

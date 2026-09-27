@@ -77,7 +77,10 @@ def test_yfinance_adapter_exponential_backoff_on_repeated_rate_limits() -> None:
 
     with (
         patch("src.data.adapters.yfinance_adapter.yf.Ticker", return_value=mock_ticker),
-        patch("src.data.adapters.yfinance_adapter.time.sleep", side_effect=lambda s: sleeps.append(float(s))),
+        patch(
+            "src.data.adapters.yfinance_adapter.time.sleep",
+            side_effect=lambda s: sleeps.append(float(s)),
+        ),
         patch("src.data.adapters.yfinance_adapter.random.uniform", return_value=0.0),
     ):
         adapter = YFinanceAdapter(

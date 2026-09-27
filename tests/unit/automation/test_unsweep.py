@@ -103,7 +103,10 @@ def test_unsweep_funds_entry_from_flat_then_buy_submits(
     wf = _workflow(settings, broker)
     caplog.set_level(logging.INFO)
     result = wf.run_cycle(as_of=datetime(2026, 8, 18, 17, 30, tzinfo=UTC))
-    assert any("cash_sweep unsweep" in r.message and "funding SPY entry" in r.message for r in caplog.records)
+    assert any(
+        "cash_sweep unsweep" in r.message and "funding SPY entry" in r.message
+        for r in caplog.records
+    )
     sells = [c for c in broker.submit_calls if c[0] == "BIL" and c[2] == "sell"]
     buys = [c for c in broker.submit_calls if c[0] == "SPY" and c[2] == "buy"]
     assert sells, "expected unsweep sell of BIL"
@@ -114,7 +117,9 @@ def test_unsweep_funds_entry_from_flat_then_buy_submits(
     sell_idx = broker.submit_calls.index(sells[0])
     buy_idx = broker.submit_calls.index(buys[0])
     assert sell_idx < buy_idx
-    assert any(r.submitted and r.symbol == "SPY" and r.side == "buy" for r in result.execution_results)
+    assert any(
+        r.submitted and r.symbol == "SPY" and r.side == "buy" for r in result.execution_results
+    )
 
 
 def test_partial_unsweep_attempts_buy_with_distinct_reason(
@@ -140,7 +145,9 @@ def test_partial_unsweep_attempts_buy_with_distinct_reason(
     assert spy[0].submitted is False
     assert spy[0].reason == "insufficient cash after partial unsweep"
     alerts = store.get_alerts()
-    assert any(a.get("category") == "unsweep_failed" and a.get("level") == "warning" for a in alerts)
+    assert any(
+        a.get("category") == "unsweep_failed" and a.get("level") == "warning" for a in alerts
+    )
 
 
 def test_kill_switch_blocks_unsweep(

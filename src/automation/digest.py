@@ -161,7 +161,9 @@ def render_digest_plain_text(summary: DigestSummary) -> str:
 
 def render_digest_html(summary: DigestSummary) -> str:
     """Render digest as a minimal HTML fragment."""
-    scope = html.escape("all accounts" if summary.account_id is None else f"account {summary.account_id}")
+    scope = html.escape(
+        "all accounts" if summary.account_id is None else f"account {summary.account_id}"
+    )
     body_lines = [
         f"<h2>Carmel digest ({scope})</h2>",
         "<ul>",

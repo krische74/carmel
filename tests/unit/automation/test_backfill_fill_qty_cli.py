@@ -50,7 +50,9 @@ def _seed_null(store: SQLiteStore) -> None:
     )
 
 
-def _broker_with_fill(*, filled_qty: float | None, price: float | None, missing: bool = False) -> MagicMock:
+def _broker_with_fill(
+    *, filled_qty: float | None, price: float | None, missing: bool = False
+) -> MagicMock:
     broker = MagicMock()
 
     def get_order_fill(order_id: str) -> tuple[float | None, float | None]:
@@ -105,7 +107,9 @@ def test_backfill_fill_qty_cli_missing_order_leaves_null_and_backs_up(
     backups: list[Path] = []
     monkeypatch.setattr(runner_mod, "get_settings", lambda: _settings(tmp_path))
     monkeypatch.setattr(runner_mod, "hub_sqlite_path", lambda _settings: db)
-    monkeypatch.setattr(runner_mod, "_backup_hub_sqlite", lambda path: backups.append(path) or path)
+    monkeypatch.setattr(
+        runner_mod, "_backup_hub_sqlite", lambda path: backups.append(path) or path
+    )
     monkeypatch.setattr(
         runner_mod,
         "broker_from_settings",

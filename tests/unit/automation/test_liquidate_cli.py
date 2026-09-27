@@ -43,7 +43,9 @@ def test_liquidate_submits_and_logs_execution_row(tmp_path, monkeypatch) -> None
 
     monkeypatch.setattr("src.automation.runner.broker_from_settings", lambda _s: broker)
     monkeypatch.setattr("src.automation.runner.SQLiteStore", lambda _p: store)
-    monkeypatch.setattr("src.automation.runner.hub_sqlite_path", lambda _s: tmp_path / "hub.sqlite")
+    monkeypatch.setattr(
+        "src.automation.runner.hub_sqlite_path", lambda _s: tmp_path / "hub.sqlite"
+    )
     monkeypatch.setattr("src.automation.runner.parquet_dir", lambda _s: tmp_path / "parquet")
     monkeypatch.setattr("src.automation.runner.OrderManager", lambda **kw: om)
     monkeypatch.setattr(

@@ -560,7 +560,9 @@ class OrderManager:
         halted = self._kill_switch.is_halted(daily_pnl_pct)
         remaining_cash = float(cash)
         positions = dict(positions)
-        submitted_notional_by_symbol = self._pending_buy_notional_by_symbol(last_prices=last_prices)
+        submitted_notional_by_symbol = self._pending_buy_notional_by_symbol(
+            last_prices=last_prices
+        )
         out: list[OrderExecutionResult] = []
         for s in signals:
             if s.direction == "flat":
@@ -800,9 +802,9 @@ class OrderManager:
                     except (ConnectionError, OSError, ValueError, RuntimeError, TimeoutError):
                         logger.exception("Stop-loss submit failed for %s", sym)
             if order_status != "filled" or not buy_debited:
-                submitted_notional_by_symbol[sym] = (
-                    float(submitted_notional_by_symbol.get(sym, 0.0)) + float(notional)
-                )
+                submitted_notional_by_symbol[sym] = float(
+                    submitted_notional_by_symbol.get(sym, 0.0)
+                ) + float(notional)
 
             out.append(
                 OrderExecutionResult(
@@ -822,7 +824,9 @@ class OrderManager:
             )
         return out
 
-    def _pending_buy_notional_by_symbol(self, *, last_prices: dict[str, float]) -> dict[str, float]:
+    def _pending_buy_notional_by_symbol(
+        self, *, last_prices: dict[str, float]
+    ) -> dict[str, float]:
         """Outstanding buy exposure from broker open/pending orders by symbol notional.
 
         Uses ``list_recent_orders(limit=100)``; very busy accounts can tail-truncate older

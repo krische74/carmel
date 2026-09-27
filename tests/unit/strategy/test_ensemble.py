@@ -222,7 +222,9 @@ def test_flat_signals_pass_through() -> None:
     assert flats[0].rationale == "flat info"
 
 
-def test_unknown_strategy_weight_zero_dropped_with_warning(caplog: pytest.LogCaptureFixture) -> None:
+def test_unknown_strategy_weight_zero_dropped_with_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     import logging
 
     weird = Signal(

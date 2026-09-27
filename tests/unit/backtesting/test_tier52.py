@@ -144,7 +144,9 @@ def test_dca_contribution_matches_live_sizer(tmp_path) -> None:
             dca_targets=[DCATarget(symbol="VOO", weight=1.0)],
         ),
         strategy=StrategyConfig(dca=DCAConfig(frequency="weekly", percent_of_equity=0.025)),
-        risk=RiskConfig(max_position_pct=0.25, min_order_notional_usd=5.0, min_cash_reserve_pct=0.05),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_order_notional_usd=5.0, min_cash_reserve_pct=0.05
+        ),
     )
     equity = 10_000.0
     budget = equity * 0.025
@@ -184,7 +186,9 @@ def test_dca_ramp_reaches_cap_not_starts_there(tmp_path) -> None:
             dca_targets=[DCATarget(symbol="VOO", weight=1.0)],
         ),
         strategy=StrategyConfig(dca=DCAConfig(frequency="weekly", percent_of_equity=0.10)),
-        risk=RiskConfig(max_position_pct=0.25, min_order_notional_usd=5.0, min_cash_reserve_pct=0.05),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_order_notional_usd=5.0, min_cash_reserve_pct=0.05
+        ),
     )
     start_d = date(2024, 1, 2)
     voo = _ohlcv(80, start_d, drift=0.0)
@@ -219,7 +223,9 @@ def test_constrained_run_reports_exposure(tmp_path) -> None:
             cache_dir=str(tmp_path / "cache"),
             universe=["SPY"],
         ),
-        risk=RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.05, min_order_notional_usd=5.0),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_cash_reserve_pct=0.05, min_order_notional_usd=5.0
+        ),
     )
     result = BacktestEngine().run(
         _FullLongStrategy(),

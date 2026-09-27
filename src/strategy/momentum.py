@@ -224,9 +224,7 @@ class MomentumRotationStrategy(Strategy):
             if self._disable_adx
             else f"ADX above {adx_threshold:.1f} ({adx_period}-day)."
         )
-        band_note = (
-            f" Band k={self._band_k}." if self._band_k is not None else ""
-        )
+        band_note = f" Band k={self._band_k}." if self._band_k is not None else ""
         out: list[Signal] = []
         for sym, weight in risk_targets:
             sc = scores.get(sym, 0.0)

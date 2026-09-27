@@ -50,11 +50,7 @@ account_options = ["All accounts", *account_ids]
 account_choice = st.selectbox("Account", options=account_options, index=0)
 selected_account_id: str | None = None if account_choice == "All accounts" else account_choice
 
-years_set = {
-    int(cl.closed_at.year)
-    for cl in closed_all
-    if hasattr(cl.closed_at, "year")
-}
+years_set = {int(cl.closed_at.year) for cl in closed_all if hasattr(cl.closed_at, "year")}
 now_y = datetime.now(UTC).year
 if not years_set:
     year_options = [now_y]
@@ -85,7 +81,9 @@ _ht = _hub_account_types_local()
 if _ht and account_choice != "All accounts":
     _t = _ht.get(account_choice, "brokerage")
     if _t == "ira_traditional":
-        st.caption("Tax treatment: **Tax-Deferred** (traditional IRA — informational export only).")
+        st.caption(
+            "Tax treatment: **Tax-Deferred** (traditional IRA — informational export only)."
+        )
     elif _t == "ira_roth":
         st.caption("Tax treatment: **Tax-Free** (Roth IRA — informational export only).")
 
@@ -195,7 +193,9 @@ with st.expander("Cross-account wash sale flags (informational)"):
         "These matches are for review only — they do not adjust cost basis.",
     )
     if len(account_ids) < 2:
-        st.info("At least two hub accounts with lot data are required for cross-account detection.")
+        st.info(
+            "At least two hub accounts with lot data are required for cross-account detection."
+        )
     elif not cross_flags:
         st.info(f"No cross-account patterns flagged for {selected_year}.")
     else:
@@ -250,9 +250,7 @@ _sdc2[3].metric("LT net (8949 rows)", f"${sd.long_term_net:,.2f}")
 st.caption(f"Total net gain or loss (Schedule D style): **${sd.total_net_gain_or_loss:,.2f}**")
 _sd_fn = f"schedule_d_{selected_year}"
 if selected_account_id is not None:
-    _safe_sd = "".join(
-        c if c.isalnum() or c in "-_" else "_" for c in selected_account_id
-    )[:64]
+    _safe_sd = "".join(c if c.isalnum() or c in "-_" else "_" for c in selected_account_id)[:64]
     _sd_fn += f"_{_safe_sd}"
 _sd_fn += ".csv"
 st.download_button(

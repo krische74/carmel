@@ -309,7 +309,9 @@ class SQLiteStore:
                         f"ALTER TABLE {table} ADD COLUMN account_id TEXT NOT NULL DEFAULT 'default'",
                     )
             self._migrate_equity_snapshots_account_composite(conn)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_account ON trade_signals(account_id)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_signals_account ON trade_signals(account_id)"
+            )
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_executions_account ON trade_executions(account_id)",
             )

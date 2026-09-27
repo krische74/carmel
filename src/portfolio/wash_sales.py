@@ -27,7 +27,9 @@ class CrossAccountWashSale(BaseModel):
     buying_account: str
     symbol: str
     loss_amount: float = Field(..., ge=0.0, description="Absolute loss on the sale lot.")
-    replacement_date: date = Field(..., description="Open date of earliest qualifying replacement lot.")
+    replacement_date: date = Field(
+        ..., description="Open date of earliest qualifying replacement lot."
+    )
     sell_date: date = Field(..., description="Calendar date of the loss sale (UTC).")
 
 

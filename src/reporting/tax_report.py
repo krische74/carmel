@@ -511,11 +511,21 @@ def _write_schedule_d_csv(summary: ScheduleDSummary, f: TextIO) -> None:
         w.writerow(["Account scope", summary.account_id])
     w.writerow(["Part I - Short-term proceeds", f"{summary.short_term_proceeds:.2f}"])
     w.writerow(["Part I - Short-term cost or other basis", f"{summary.short_term_cost_basis:.2f}"])
-    w.writerow(["Part I - Short-term wash adjustments (code W)", f"{summary.short_term_wash_adjustments:.2f}"])
+    w.writerow(
+        [
+            "Part I - Short-term wash adjustments (code W)",
+            f"{summary.short_term_wash_adjustments:.2f}",
+        ]
+    )
     w.writerow(["Part I - Short-term net gain or loss", f"{summary.short_term_net:.2f}"])
     w.writerow(["Part II - Long-term proceeds", f"{summary.long_term_proceeds:.2f}"])
     w.writerow(["Part II - Long-term cost or other basis", f"{summary.long_term_cost_basis:.2f}"])
-    w.writerow(["Part II - Long-term wash adjustments (code W)", f"{summary.long_term_wash_adjustments:.2f}"])
+    w.writerow(
+        [
+            "Part II - Long-term wash adjustments (code W)",
+            f"{summary.long_term_wash_adjustments:.2f}",
+        ]
+    )
     w.writerow(["Part II - Long-term net gain or loss", f"{summary.long_term_net:.2f}"])
     w.writerow(["Total net gain or loss", f"{summary.total_net_gain_or_loss:.2f}"])
 

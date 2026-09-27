@@ -132,10 +132,7 @@ risk: {max_position_pct: 0.25}
         out = build_brokers(settings)
     assert set(out.keys()) == {"Main", "IRA"}
     assert mock_create.call_count == 2
-    ids = {
-        mock_create.call_args_list[i].kwargs["logical_account_id"]
-        for i in range(2)
-    }
+    ids = {mock_create.call_args_list[i].kwargs["logical_account_id"] for i in range(2)}
     assert ids == {"Main", "IRA"}
 
 

@@ -193,7 +193,9 @@ def test_bucket_order_status_maps_known_alpaca_strings(raw: str, expected: str) 
     assert _bucket_order_status(raw) == expected
 
 
-def test_bucket_order_status_unknown_logs_and_returns_unknown(caplog: pytest.LogCaptureFixture) -> None:
+def test_bucket_order_status_unknown_logs_and_returns_unknown(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     with caplog.at_level(logging.WARNING):
         assert _bucket_order_status("not_a_real_alpaca_status_xyz") == "unknown"
     assert any("Unknown broker order status" in r.message for r in caplog.records)

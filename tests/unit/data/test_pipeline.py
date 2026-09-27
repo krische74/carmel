@@ -714,7 +714,9 @@ def test_pipeline_uses_append_not_overwrite(tmp_path: Path) -> None:
     df2 = _sample_frame(idx2)
     adapter = _SeqOhlcvAdapter([df1, df2])
     pq = ParquetStore(tmp_path / "pq3")
-    pipeline = DataPipeline(adapter=adapter, parquet_store=pq, sqlite_store=None, initial_backfill_years=0)
+    pipeline = DataPipeline(
+        adapter=adapter, parquet_store=pq, sqlite_store=None, initial_backfill_years=0
+    )
     assert pipeline.ingest_ohlcv("ZZZ").success is True
     assert pipeline.ingest_ohlcv("ZZZ").success is True
     loaded = pq.read_ohlcv("ZZZ")
@@ -729,7 +731,9 @@ def test_pipeline_dedup_overlapping_dates(tmp_path: Path) -> None:
     overlap = len(set(idx1.normalize()) & set(idx2.normalize()))
     adapter = _SeqOhlcvAdapter([df1, df2])
     pq = ParquetStore(tmp_path / "pq4")
-    pipeline = DataPipeline(adapter=adapter, parquet_store=pq, sqlite_store=None, initial_backfill_years=0)
+    pipeline = DataPipeline(
+        adapter=adapter, parquet_store=pq, sqlite_store=None, initial_backfill_years=0
+    )
     assert pipeline.ingest_ohlcv("OVL").success is True
     assert pipeline.ingest_ohlcv("OVL").success is True
     loaded = pq.read_ohlcv("OVL")

@@ -92,7 +92,9 @@ def test_preflight_fails_no_strategies() -> None:
     s.broker = BrokerConfig(paper_trading=True)
     rep = run_preflight_checks(s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: []))
     assert rep.failed
-    assert any(c.name == "strategies_enabled" and c.status == PreflightStatus.FAIL for c in rep.checks)
+    assert any(
+        c.name == "strategies_enabled" and c.status == PreflightStatus.FAIL for c in rep.checks
+    )
 
 
 def test_preflight_warns_no_notifications() -> None:
@@ -103,7 +105,9 @@ def test_preflight_warns_no_notifications() -> None:
     s.strategy.enabled = ["momentum"]
     s.notification = NotificationConfig(enabled=False, webhook_url="", email_enabled=False)
     rep = run_preflight_checks(s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: []))
-    assert any(c.name == "notification_channel" and c.status == PreflightStatus.WARN for c in rep.checks)
+    assert any(
+        c.name == "notification_channel" and c.status == PreflightStatus.WARN for c in rep.checks
+    )
 
 
 def test_preflight_warns_no_backtest() -> None:
@@ -116,7 +120,9 @@ def test_preflight_warns_no_backtest() -> None:
     store = MagicMock()
     store.get_backtest_runs.return_value = []
     rep = run_preflight_checks(s, broker, sqlite_store=store)
-    assert any(c.name == "recent_backtest" and c.status == PreflightStatus.WARN for c in rep.checks)
+    assert any(
+        c.name == "recent_backtest" and c.status == PreflightStatus.WARN for c in rep.checks
+    )
 
 
 def test_preflight_fails_kill_switch_too_high() -> None:
@@ -127,9 +133,13 @@ def test_preflight_fails_kill_switch_too_high() -> None:
     s.risk = RiskConfig(daily_loss_limit_pct=1.0)
     s.strategy.enabled = ["dca"]
     s.notification = NotificationConfig(enabled=True, webhook_url="https://x.test")
-    rep = run_preflight_checks(s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}]))
+    rep = run_preflight_checks(
+        s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}])
+    )
     assert rep.failed
-    assert any(c.name == "kill_switch_limit" and c.status == PreflightStatus.FAIL for c in rep.checks)
+    assert any(
+        c.name == "kill_switch_limit" and c.status == PreflightStatus.FAIL for c in rep.checks
+    )
 
 
 def test_preflight_warns_on_missing_required_symbol() -> None:
@@ -300,7 +310,9 @@ def test_preflight_fails_when_sweep_symbol_in_momentum_universe() -> None:
     # Mutate past the model validator (which blocks this at construction) to exercise
     # the preflight guard on the runtime-mutation path.
     s.cash_sweep.symbol = s.strategy.momentum.cash_symbol  # SHV — inside momentum universe
-    rep = run_preflight_checks(s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}]))
+    rep = run_preflight_checks(
+        s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}])
+    )
     assert rep.failed
     ch = next(c for c in rep.checks if c.name == "cash_sweep_symbol")
     assert ch.status == PreflightStatus.FAIL
@@ -314,7 +326,9 @@ def test_preflight_fails_when_enabled_but_no_url() -> None:
     s = _settings()
     s.strategy.enabled = ["dca"]
     s.notification = NotificationConfig(enabled=True, webhook_url="", email_enabled=False)
-    rep = run_preflight_checks(s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}]))
+    rep = run_preflight_checks(
+        s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}])
+    )
     assert rep.failed
     ch = next(c for c in rep.checks if c.name == "notification_channel")
     assert ch.status == PreflightStatus.FAIL
@@ -332,7 +346,9 @@ def test_preflight_passes_when_webhook_configured() -> None:
         webhook_url="https://hooks.example/test",
         email_enabled=False,
     )
-    rep = run_preflight_checks(s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}]))
+    rep = run_preflight_checks(
+        s, broker, sqlite_store=MagicMock(get_backtest_runs=lambda **k: [{}])
+    )
     assert not rep.failed
     ch = next(c for c in rep.checks if c.name == "notification_channel")
     assert ch.status == PreflightStatus.PASS

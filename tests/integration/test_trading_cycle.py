@@ -114,7 +114,9 @@ def test_full_trading_cycle_end_to_end(integration_settings: Settings, tmp_path:
     broker.get_account_equity.side_effect = _equity
     broker.get_last_equity.side_effect = _equity
     broker.get_cash.side_effect = lambda: cash_box[0]
-    broker.get_position_qty.side_effect = lambda s: float(positions.get(str(s).strip().upper(), 0.0))
+    broker.get_position_qty.side_effect = lambda s: float(
+        positions.get(str(s).strip().upper(), 0.0)
+    )
     broker.submit_market_order.side_effect = _submit
     broker.get_order_fill_price.return_value = fill_px
     broker.list_recent_orders.return_value = [

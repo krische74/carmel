@@ -62,7 +62,9 @@ def test_tax_summary_returns_empty_for_no_data_year(tmp_path, tmp_api_settings: 
     assert r.json()["total_net"] == 0.0
 
 
-def test_tax_summary_with_account_filter_returns_subset(tmp_path, tmp_api_settings: Settings) -> None:
+def test_tax_summary_with_account_filter_returns_subset(
+    tmp_path, tmp_api_settings: Settings
+) -> None:
     from datetime import UTC, datetime
 
     from src.portfolio.tax_lots import LotLedger
@@ -85,7 +87,9 @@ def test_tax_summary_with_account_filter_returns_subset(tmp_path, tmp_api_settin
     assert data["lots"][0]["account_id"] == "main"
 
 
-def test_tax_summary_account_id_whitespace_is_stripped(tmp_path, tmp_api_settings: Settings) -> None:
+def test_tax_summary_account_id_whitespace_is_stripped(
+    tmp_path, tmp_api_settings: Settings
+) -> None:
     """Leading/trailing spaces on ``account_id`` should still match the stored id."""
     from datetime import UTC, datetime
 
@@ -106,7 +110,9 @@ def test_tax_summary_account_id_whitespace_is_stripped(tmp_path, tmp_api_setting
     assert data["lots"][0]["symbol"] == "SPY"
 
 
-def test_tax_summary_whitespace_only_account_id_means_consolidated(tmp_path, tmp_api_settings: Settings) -> None:
+def test_tax_summary_whitespace_only_account_id_means_consolidated(
+    tmp_path, tmp_api_settings: Settings
+) -> None:
     """Blank/whitespace ``account_id`` normalizes to None → all accounts in summary."""
     from datetime import UTC, datetime
 

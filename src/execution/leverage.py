@@ -52,7 +52,4 @@ def leverage_violation_message(
     detail = [f"cash={snap.cash:.2f}"]
     if snap.maintenance_margin is not None and snap.maintenance_margin > 1e-6:
         detail.append(f"maintenance_margin={snap.maintenance_margin:.2f}")
-    return (
-        f"Account leveraged ({', '.join(detail)}); "
-        f"cycle orders: {order_sequence}"
-    )
+    return f"Account leveraged ({', '.join(detail)}); cycle orders: {order_sequence}"

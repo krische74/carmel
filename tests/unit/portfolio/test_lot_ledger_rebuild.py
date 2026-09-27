@@ -100,10 +100,18 @@ def test_rebuild_clears_stale_pre_reset_lots_and_replays_fifo(tmp_path: Path) ->
     t_buy2 = datetime(2026, 5, 20, 17, 30, 0, tzinfo=UTC)
     t_sell1 = datetime(2026, 6, 19, 17, 30, 9, tzinfo=UTC)
     t_sell2 = datetime(2026, 8, 6, 17, 30, 15, tzinfo=UTC)
-    _log_fill(store, symbol="QQQ", side="buy", qty=1.1764, timestamp=t_buy1, filled_avg_price=700.0)
-    _log_fill(store, symbol="QQQ", side="buy", qty=1.2342, timestamp=t_buy2, filled_avg_price=710.0)
-    _log_fill(store, symbol="QQQ", side="sell", qty=1.1764, timestamp=t_sell1, filled_avg_price=740.0)
-    _log_fill(store, symbol="QQQ", side="sell", qty=1.2342, timestamp=t_sell2, filled_avg_price=715.0)
+    _log_fill(
+        store, symbol="QQQ", side="buy", qty=1.1764, timestamp=t_buy1, filled_avg_price=700.0
+    )
+    _log_fill(
+        store, symbol="QQQ", side="buy", qty=1.2342, timestamp=t_buy2, filled_avg_price=710.0
+    )
+    _log_fill(
+        store, symbol="QQQ", side="sell", qty=1.1764, timestamp=t_sell1, filled_avg_price=740.0
+    )
+    _log_fill(
+        store, symbol="QQQ", side="sell", qty=1.2342, timestamp=t_sell2, filled_avg_price=715.0
+    )
 
     result = rebuild_lot_ledger_from_executions(
         store,
@@ -205,7 +213,9 @@ def test_rebuild_equity_snapshots_overwrites_corrupt_curve(tmp_path: Path) -> No
     store = SQLiteStore(db)
     ledger = LotLedger(db)
     pq = ParquetStore(tmp_path / "parquet")
-    pq.write_ohlcv("BIL", _ohlcv([("2026-05-16", 91.0), ("2026-05-17", 91.5), ("2026-05-18", 92.0)]))
+    pq.write_ohlcv(
+        "BIL", _ohlcv([("2026-05-16", 91.0), ("2026-05-17", 91.5), ("2026-05-18", 92.0)])
+    )
 
     # Corrupt snapshot reflecting stale lots (including a pre-cutoff row).
     store.write_equity_snapshot(

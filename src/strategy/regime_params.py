@@ -40,7 +40,9 @@ def effective_dca_amount(
     return base
 
 
-def effective_mean_reversion_max_positions(settings: Settings, overall: OverallRegime | None) -> int:
+def effective_mean_reversion_max_positions(
+    settings: Settings, overall: OverallRegime | None
+) -> int:
     """Cap on simultaneous mean-reversion longs from regime-specific limits."""
     cfg = settings.strategy.mean_reversion
     base = int(cfg.max_positions)

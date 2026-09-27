@@ -125,7 +125,9 @@ def test_target_position_notional_matches_order_notional_at_zero_current() -> No
     assert target == pytest.approx(0.25 * equity)
 
 
-def test_cli_loader_pins_trades_on_fixed_dataset(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cli_loader_pins_trades_on_fixed_dataset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Tier 50D: CLI data-loading path is deterministic on a fixed Parquet fixture."""
     import src.automation.runner as runner_mod
     from src.data.storage.parquet_store import ParquetStore
@@ -229,7 +231,9 @@ def test_constrained_backtest_caps_peak_allocation(tmp_path: Path) -> None:
             cache_dir=str(tmp_path / "cache"),
             universe=["SPY"],
         ),
-        risk=RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.05, min_order_notional_usd=5.0),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_cash_reserve_pct=0.05, min_order_notional_usd=5.0
+        ),
     )
     cfg = BacktestConfig(
         rebalance_frequency="weekly",
@@ -265,7 +269,9 @@ def test_raw_signal_mode_matches_unconstrained_weight(tmp_path: Path) -> None:
         ),
         risk=RiskConfig(max_position_pct=0.25),
     )
-    raw_cfg = BacktestConfig(rebalance_frequency="weekly", apply_risk_layer=False, cash_yield_annual_pct=0.0)
+    raw_cfg = BacktestConfig(
+        rebalance_frequency="weekly", apply_risk_layer=False, cash_yield_annual_pct=0.0
+    )
     raw = BacktestEngine().run(
         _FullLongStrategy(),
         data,

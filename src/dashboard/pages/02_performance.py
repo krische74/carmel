@@ -80,8 +80,12 @@ if len(snap_rows) >= 2:
         equity = be.where(be.notna(), mv_cash)
     else:
         equity = mv_cash
-    eq0 = float(equity.iloc[0]) if pd.notna(equity.iloc[0]) and float(equity.iloc[0]) > 0 else float(
-        "nan",
+    eq0 = (
+        float(equity.iloc[0])
+        if pd.notna(equity.iloc[0]) and float(equity.iloc[0]) > 0
+        else float(
+            "nan",
+        )
     )
     if eq0 != eq0 or eq0 <= 0:  # NaN or non-positive
         st.caption("Cannot normalize portfolio: first-row equity (MV + cash) is missing or zero.")

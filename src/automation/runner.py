@@ -289,7 +289,10 @@ def _create_workflow_or_log_alpaca_help(settings: Settings) -> TradingWorkflow |
         brokers = build_brokers(settings)
     except ValueError as exc:
         msg = str(exc)
-        if "Alpaca API credentials are missing" not in msg and "Missing credentials for broker" not in msg:
+        if (
+            "Alpaca API credentials are missing" not in msg
+            and "Missing credentials for broker" not in msg
+        ):
             raise
         logger.error("%s", exc)
         logger.error(
@@ -459,8 +462,7 @@ def _emit_liveness_ping(settings: Settings, sqlite: SQLiteStore) -> None:
             level=AlertLevel.INFO,
             category="liveness",
             message=(
-                f"Carmel daemon alive. Last cycle_summary: {last_cycle}. "
-                f"Heartbeat: {hb_age}."
+                f"Carmel daemon alive. Last cycle_summary: {last_cycle}. Heartbeat: {hb_age}."
             ),
         ),
     )
@@ -559,7 +561,11 @@ def _run_reconcile_cli(settings: Settings) -> int:
     for lot in open_lots:
         ledger_qty[lot.symbol] = ledger_qty.get(lot.symbol, 0.0) + float(lot.qty)
     broker.refresh_account()
-    syms = sorted(set(ledger_qty) | set(settings.data.universe) | {t.symbol for t in settings.data.dca_targets})
+    syms = sorted(
+        set(ledger_qty)
+        | set(settings.data.universe)
+        | {t.symbol for t in settings.data.dca_targets}
+    )
     if settings.cash_sweep.enabled:
         syms = sorted(set(syms) | {settings.cash_sweep.symbol.strip().upper()})
     from src.portfolio.state import snapshot_from_broker
@@ -866,6 +872,7 @@ def _run_daemon(settings: Settings, brokers: dict[str, BrokerInterface]) -> None
             replace_existing=True,
         )
         logger.info("Liveness cron: %s", lv_cron)
+
     # Translate Docker's SIGTERM into KeyboardInterrupt so the finally block
     # runs and the heartbeat file is removed — otherwise the next container
     # start sees a fresh-but-frozen heartbeat and pays the observation cost.
@@ -1069,7 +1076,9 @@ def _run_backtest_cli(
         benchmark_symbol=bench_sym,
         benchmark_metrics=bench_metrics,
     )
-    mode_label = "raw signal (no risk layer)" if raw_signal else "constrained (production-faithful)"
+    mode_label = (
+        "raw signal (no risk layer)" if raw_signal else "constrained (production-faithful)"
+    )
     print(f"Backtest: {strat_label} ({start.isoformat()} to {end.isoformat()})", flush=True)
     print(f"Sizing mode:        {mode_label}", flush=True)
     print(
@@ -1101,10 +1110,14 @@ def _run_backtest_cli(
         print(f"  Total return:       {bench_metrics.total_return_pct:.2f}%", flush=True)
         print(f"  CAGR:               {bench_metrics.cagr_pct:.2f}%", flush=True)
         b_sharpe = (
-            f"{bench_metrics.sharpe_ratio:.2f}" if bench_metrics.sharpe_ratio is not None else "N/A"
+            f"{bench_metrics.sharpe_ratio:.2f}"
+            if bench_metrics.sharpe_ratio is not None
+            else "N/A"
         )
         b_calmar = (
-            f"{bench_metrics.calmar_ratio:.2f}" if bench_metrics.calmar_ratio is not None else "N/A"
+            f"{bench_metrics.calmar_ratio:.2f}"
+            if bench_metrics.calmar_ratio is not None
+            else "N/A"
         )
         print(f"  Sharpe ratio:       {b_sharpe}", flush=True)
         print(f"  Max drawdown:       {bench_metrics.max_drawdown_pct:.2f}%", flush=True)
@@ -1492,7 +1505,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         except ValueError as exc:
             msg = str(exc)
-            if "Alpaca API credentials are missing" not in msg and "Missing credentials for broker" not in msg:
+            if (
+                "Alpaca API credentials are missing" not in msg
+                and "Missing credentials for broker" not in msg
+            ):
                 raise
             logger.error("%s", exc)
             logger.error(
@@ -1530,7 +1546,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         except ValueError as exc:
             msg = str(exc)
-            if "Alpaca API credentials are missing" not in msg and "Missing credentials for broker" not in msg:
+            if (
+                "Alpaca API credentials are missing" not in msg
+                and "Missing credentials for broker" not in msg
+            ):
                 raise
             logger.error("%s", exc)
             logger.error(

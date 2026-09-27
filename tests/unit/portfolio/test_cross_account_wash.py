@@ -248,7 +248,9 @@ def test_cross_account_replacement_from_closed_lot_in_other_account() -> None:
         realized_pnl=30.0,
         account_id="b",
     )
-    flags = detect_cross_account_wash_sales({"a": [loss_a], "b": [buy_then_sell_b]}, {}, window_days=30)
+    flags = detect_cross_account_wash_sales(
+        {"a": [loss_a], "b": [buy_then_sell_b]}, {}, window_days=30
+    )
     assert len(flags) == 1
     assert flags[0].buying_account == "b"
 

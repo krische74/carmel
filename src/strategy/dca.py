@@ -67,9 +67,7 @@ class DCAStrategy(Strategy):
             return []
         regime_note = ""
         if overall is not None and abs(amount - base_amt) > 1e-9:
-            regime_note = (
-                f" Regime-adjusted total ({overall.value}) is ${amount:.0f} vs base ${base_amt:.0f}."
-            )
+            regime_note = f" Regime-adjusted total ({overall.value}) is ${amount:.0f} vs base ${base_amt:.0f}."
         percent_note = ""
         pct = self._settings.strategy.dca.percent_of_equity
         if pct is not None:

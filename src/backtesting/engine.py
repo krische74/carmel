@@ -846,16 +846,14 @@ class BacktestEngine:
                             skip_symbols=skip_syms,
                         )
                         if not targets:
-                            empty_target_liquidation_trades += len(trades) - trades_before_rebalance
+                            empty_target_liquidation_trades += (
+                                len(trades) - trades_before_rebalance
+                            )
                         last_hold_state = new_hold_state
                         last_targets = dict(targets)
 
             if dca_strategy is not None and settings is not None:
-                if (
-                    cfg.use_regime
-                    and regime is not None
-                    and cfg.pin_dca_regime_multiplier is None
-                ):
+                if cfg.use_regime and regime is not None and cfg.pin_dca_regime_multiplier is None:
                     dca_sigs = dca_strategy.generate_signals(
                         data,
                         as_of=as_of,
@@ -944,9 +942,7 @@ class BacktestEngine:
         avg_exp = float(sum(exposures) / len(exposures)) if exposures else 0.0
         max_exp = float(max(exposures)) if exposures else 0.0
         max_exp_date = (
-            exposure_dates[exposures.index(max_exp)]
-            if exposures and exposure_dates
-            else None
+            exposure_dates[exposures.index(max_exp)] if exposures and exposure_dates else None
         )
         mean_eq = (
             float(sum(float(p["equity"]) for p in equity_curve) / len(equity_curve))

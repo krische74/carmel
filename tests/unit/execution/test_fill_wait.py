@@ -306,5 +306,7 @@ def test_fill_wait_timeout_does_not_exceed_budget(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr("src.execution.order_manager.time.monotonic", clock.monotonic)
     filled = mgr.wait_for_fill(oid)
     assert filled is False
-    assert clock.t == pytest.approx(FILL_WAIT_BUDGET_SECONDS, abs=FILL_WAIT_INTERVAL_SECONDS + 0.05)
+    assert clock.t == pytest.approx(
+        FILL_WAIT_BUDGET_SECONDS, abs=FILL_WAIT_INTERVAL_SECONDS + 0.05
+    )
     assert broker.get_cash() == pytest.approx(_CASH_BEFORE)

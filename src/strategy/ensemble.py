@@ -51,8 +51,7 @@ def merge_signals(
             tactical.append(s)
 
     cash_penalty = any(
-        s.strategy_name == "MomentumRotationStrategy" and s.direction == "cash"
-        for s in tactical
+        s.strategy_name == "MomentumRotationStrategy" and s.direction == "cash" for s in tactical
     )
     momentum_cash_signals = [
         s

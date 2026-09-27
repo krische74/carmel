@@ -359,4 +359,6 @@ def test_buy_wait_timeout_within_budget(monkeypatch: pytest.MonkeyPatch) -> None
         cash_before=cash_before,
     )
     assert debited is False
-    assert clock.t == pytest.approx(FILL_WAIT_BUDGET_SECONDS, abs=FILL_WAIT_INTERVAL_SECONDS + 0.05)
+    assert clock.t == pytest.approx(
+        FILL_WAIT_BUDGET_SECONDS, abs=FILL_WAIT_INTERVAL_SECONDS + 0.05
+    )

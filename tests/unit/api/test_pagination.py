@@ -75,7 +75,9 @@ def test_api_executions_offset_beyond_total_returns_empty_items(
     assert body["offset"] == 9999
 
 
-def test_api_pagination_defaults_offset_zero(paginated_app: tuple[TestClient, SQLiteStore]) -> None:
+def test_api_pagination_defaults_offset_zero(
+    paginated_app: tuple[TestClient, SQLiteStore],
+) -> None:
     client, _store = paginated_app
     r = client.get("/api/alerts")
     assert r.status_code == 200

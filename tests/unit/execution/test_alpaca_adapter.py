@@ -130,13 +130,17 @@ def test_get_order_fill_price_returns_filled_avg_price() -> None:
 
 def test_get_order_fill_returns_qty_and_price_from_one_lookup() -> None:
     client = MagicMock()
-    client.get_order_by_id.return_value = MagicMock(filled_qty="6.133477", filled_avg_price="91.55")
+    client.get_order_by_id.return_value = MagicMock(
+        filled_qty="6.133477", filled_avg_price="91.55"
+    )
     adapter = AlpacaBrokerAdapter(client)
     qty, price = adapter.get_order_fill("e93fe3f7-c8e2-48e3-b56c-cdc4b8cc4917")
     assert qty == pytest.approx(6.133477)
     assert price == pytest.approx(91.55)
     client.get_order_by_id.assert_called_once_with("e93fe3f7-c8e2-48e3-b56c-cdc4b8cc4917")
-    assert adapter.get_order_fill_price("e93fe3f7-c8e2-48e3-b56c-cdc4b8cc4917") == pytest.approx(91.55)
+    assert adapter.get_order_fill_price("e93fe3f7-c8e2-48e3-b56c-cdc4b8cc4917") == pytest.approx(
+        91.55
+    )
 
 
 def test_get_order_fill_raises_when_order_missing() -> None:
@@ -145,7 +149,9 @@ def test_get_order_fill_raises_when_order_missing() -> None:
     from src.execution.errors import OrderNotFoundError
 
     client = MagicMock()
-    client.get_order_by_id.side_effect = APIError('{"code":40410000,"message":"order not found"}', http_error=None)
+    client.get_order_by_id.side_effect = APIError(
+        '{"code":40410000,"message":"order not found"}', http_error=None
+    )
     adapter = AlpacaBrokerAdapter(client)
     with pytest.raises(OrderNotFoundError):
         adapter.get_order_fill("gone")

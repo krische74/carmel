@@ -159,9 +159,7 @@ def _explain_dca(signal: Signal, settings: Settings) -> str:
             f"split across [{syms}] ({weekday}). Dollar size is resolved at execution from "
             "equity; see the signal rationale for this cycle's slice."
         )
-    return (
-        f"DCA contribution: ${amount:.2f} allocated across [{syms}] per {freq} schedule ({weekday})."
-    )
+    return f"DCA contribution: ${amount:.2f} allocated across [{syms}] per {freq} schedule ({weekday})."
 
 
 def _explain_mean_reversion(

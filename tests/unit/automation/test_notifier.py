@@ -416,7 +416,9 @@ def test_webhook_notifier_sends_slack_format(monkeypatch: pytest.MonkeyPatch) ->
     assert "blocks" in posted[0] and "text" in posted[0]
 
 
-def test_webhook_notifier_sends_generic_format_for_unknown_url(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_webhook_notifier_sends_generic_format_for_unknown_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     posted: list[dict[str, object]] = []
 
     def capture_urlopen(req: object, *_a: object, **_k: object) -> MagicMock:

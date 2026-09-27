@@ -243,7 +243,9 @@ def test_drift_band_no_trades_within_band_constrained(tmp_path) -> None:
             cache_dir=str(tmp_path / "cache"),
             universe=["SPY"],
         ),
-        risk=RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.0, min_order_notional_usd=1.0),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_cash_reserve_pct=0.0, min_order_notional_usd=1.0
+        ),
     )
     result = BacktestEngine().run(
         _HoldSpyStrategy(),
@@ -275,7 +277,9 @@ def test_drift_band_triggers_exactly_one_resize_past_band(tmp_path) -> None:
             cache_dir=str(tmp_path / "cache"),
             universe=["SPY"],
         ),
-        risk=RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.0, min_order_notional_usd=1.0),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_cash_reserve_pct=0.0, min_order_notional_usd=1.0
+        ),
     )
     result = BacktestEngine().run(
         _HoldSpyStrategy(),
@@ -313,7 +317,9 @@ def test_constrained_run_records_date_of_max_exposure(tmp_path) -> None:
             cache_dir=str(tmp_path / "cache"),
             universe=["SPY"],
         ),
-        risk=RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.05, min_order_notional_usd=5.0),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_cash_reserve_pct=0.05, min_order_notional_usd=5.0
+        ),
     )
     result = BacktestEngine().run(
         _HoldSpyStrategy(),
@@ -347,7 +353,9 @@ def test_gate_bypass_switches_are_off_by_default_and_full_bypass_repeats_rebalan
             cache_dir=str(tmp_path / "cache"),
             universe=["SPY"],
         ),
-        risk=RiskConfig(max_position_pct=0.25, min_cash_reserve_pct=0.0, min_order_notional_usd=1.0),
+        risk=RiskConfig(
+            max_position_pct=0.25, min_cash_reserve_pct=0.0, min_order_notional_usd=1.0
+        ),
     )
     default_cfg = _zero_cost_config().model_copy(
         update={"apply_risk_layer": True, "cash_yield_annual_pct": 200.0}

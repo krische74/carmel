@@ -124,8 +124,12 @@ def test_pin_dca_regime_multiplier_isolated_from_momentum(tmp_path) -> None:
     )
     pinned_cfg = base_cfg.model_copy(update={"pin_dca_regime_multiplier": 1.0})
     strat = _MomentumOnly()
-    r0 = eng.run(strat, data, start=start_d, end=date(2024, 4, 30), config=base_cfg, settings=settings)
-    r1 = eng.run(strat, data, start=start_d, end=date(2024, 4, 30), config=pinned_cfg, settings=settings)
+    r0 = eng.run(
+        strat, data, start=start_d, end=date(2024, 4, 30), config=base_cfg, settings=settings
+    )
+    r1 = eng.run(
+        strat, data, start=start_d, end=date(2024, 4, 30), config=pinned_cfg, settings=settings
+    )
     assert [(t.date, t.symbol, t.side, round(t.qty, 6)) for t in r0.trades] == [
         (t.date, t.symbol, t.side, round(t.qty, 6)) for t in r1.trades
     ]

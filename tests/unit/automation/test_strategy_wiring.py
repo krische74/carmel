@@ -72,7 +72,9 @@ def test_build_strategies_only_workflow_only_keys_raises() -> None:
         build_strategies_from_enabled(s)
 
 
-def test_build_strategies_unknown_name_skipped_with_warning(caplog: pytest.LogCaptureFixture) -> None:
+def test_build_strategies_unknown_name_skipped_with_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.WARNING)
     s = Settings(
         _yaml_path=None,

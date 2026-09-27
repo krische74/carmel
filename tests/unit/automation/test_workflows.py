@@ -2060,7 +2060,11 @@ def test_workflow_rotation_never_sells_sweep_symbol(settings: Settings) -> None:
 
     order_mgr = MagicMock()
     order_mgr.close_position.return_value = OrderExecutionResult(
-        symbol="SPY", submitted=True, order_id="sell-1", side="sell", qty=10.0,
+        symbol="SPY",
+        submitted=True,
+        order_id="sell-1",
+        side="sell",
+        qty=10.0,
     )
     order_mgr.execute_signals.return_value = []
 
@@ -2080,7 +2084,8 @@ def test_workflow_rotation_never_sells_sweep_symbol(settings: Settings) -> None:
 
 
 def test_workflow_sweep_buy_executes_after_buys_and_logs_cashsweep(
-    settings: Settings, tmp_path: Path,
+    settings: Settings,
+    tmp_path: Path,
 ) -> None:
     """Sweep runs after strategy buys and persists a CashSweep-attributed execution row."""
     from src.automation.workflows import TradingWorkflow
@@ -2143,7 +2148,8 @@ def test_workflow_sweep_buy_executes_after_buys_and_logs_cashsweep(
 
 
 def test_workflow_sweep_skips_when_symbol_unpriced(
-    settings: Settings, caplog: pytest.LogCaptureFixture,
+    settings: Settings,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """No price for the sweep symbol this cycle → WARNING skip, never trade unpriced."""
     from src.automation.workflows import TradingWorkflow

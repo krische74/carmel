@@ -225,9 +225,7 @@ class AlpacaBrokerAdapter(BrokerInterface):
         lmv = _as_float(getattr(acct, "long_market_value", None))
         equity = _as_float(getattr(acct, "equity", None))
         broker_lev = (
-            lmv is not None
-            and equity is not None
-            and lmv > equity + max(1.0, abs(equity) * 1e-3)
+            lmv is not None and equity is not None and lmv > equity + max(1.0, abs(equity) * 1e-3)
         )
         return LeverageSnapshot(
             cash=cash,
