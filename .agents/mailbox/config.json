@@ -1,0 +1,17 @@
+{
+  "planner": "woebbe",
+  "executor": "cursor",
+  "python": ".venv\\Scripts\\python",
+  "gate": [
+    ".venv\\Scripts\\python -m pytest tests/ -q",
+    ".venv\\Scripts\\ruff check src/ tests/"
+  ],
+  "limits": {
+    "max_minutes": 240,
+    "max_cycles": 30
+  },
+  "max_body_bytes": 200000,
+  "guard": {
+    "enforce": "armed"
+  }
+}

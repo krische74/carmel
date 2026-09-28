@@ -79,3 +79,12 @@ _to_delete/
 # Claude Code machine-local settings
 .claude/
 
+
+# agent mailbox runtime (the scripts, docs and config stay tracked)
+.agents/mailbox/to_*.md
+.agents/mailbox/state.json
+.agents/mailbox/state.json.tmp
+.agents/mailbox/*.tmp
+.agents/mailbox/HALT
+.agents/mailbox/log/
+.agents/mailbox/__pycache__/

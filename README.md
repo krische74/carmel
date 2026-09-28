@@ -27,10 +27,12 @@ agent works under (TDD, surgical edits, when to stop and ask, how to route open 
 
 Later tiers run through a file-based mailbox so the planning agent and the Cursor agent can pass
 work back and forth without me copying prompts between them. A Cursor `stop` hook waits for the
-next message and feeds it back in as the next turn. Every run is armed with a time limit and a
-cycle limit, and a HALT file stops it at any point. The transport enforces closure: once a session
-closes, the Cursor side is not handed new work even if a message is waiting. Details are in
-[`.agents/mailbox/PROTOCOL.md`](.agents/mailbox/PROTOCOL.md).
+next message and feeds it back in as the next turn. Every session needs a time limit and a cycle
+limit, and a guard hook blocks pushes, destructive git commands, secrets access, deploys and
+installs while a session is running. The mailbox is now its own project,
+[agent-mailbox](https://github.com/krische74/agent-mailbox), and this repo runs the current
+version. The rules both agents work under are in
+[`.agents/mailbox/GUARDRAILS.md`](.agents/mailbox/GUARDRAILS.md).
 
 ### What is not in this repo
 

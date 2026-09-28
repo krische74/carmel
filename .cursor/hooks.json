@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": ".venv\\Scripts\\python .agents/mailbox/stop_hook.py",
+        "timeout": 600,
+        "loop_limit": 61
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".venv\\Scripts\\python .agents/mailbox/guard_hook.py",
+        "timeout": 10,
+        "failClosed": true
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".venv\\Scripts\\python .agents/mailbox/guard_hook.py",
+        "timeout": 10,
+        "failClosed": true
+      }
+    ]
+  }
+}

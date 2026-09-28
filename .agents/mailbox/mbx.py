@@ -1,16 +1,22 @@
 #!/usr/bin/env python
-"""Carmel agent mailbox — file-based handoff between Woebbe (Cowork) and Cursor.
+"""Agent mailbox: a file-based handoff between a planner agent and an executor agent.
+
+The planner writes tasks, the executor does them and replies with evidence. Both sides use this
+CLI. Nothing here needs anything beyond the Python 3.10+ standard library.
 
 Subcommands
 -----------
-  session start --minutes N [--max-cycles N]   arm a run
-  session stop                                 halt immediately
-  status                                       print state as JSON
-  post --as {woebbe,cursor} --status {READY,DONE,BLOCKED,ACK,NOTE} [--subject S] [--body-file F | --stdin]
-  watch --as {woebbe,cursor} [--timeout S] [--poll S]
+  session start --minutes N --max-cycles N   arm a run (planner side only; both limits required)
+  session stop                               halt immediately
+  status                                     print state as JSON
+  post --as ROLE --status STATUS [--subject S] (--body-file F | --stdin)
+  watch --as ROLE [--timeout S] [--poll S]
+
+ROLE is the planner or executor name from config.json (defaults: planner, executor).
 
 watch exit codes:  0 = new message printed | 3 = session closed | 4 = timed out, nothing new
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,23 +30,47 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STATE = os.path.join(HERE, "state.json")
 LOGDIR = os.path.join(HERE, "log")
 HALTFILE = os.path.join(HERE, "HALT")
-SIDES = ("woebbe", "cursor")
-OTHER = {"woebbe": "cursor", "cursor": "woebbe"}
+CONFIG = os.path.join(HERE, "config.json")
 
-DEFAULT_STATE = {
-    "seq": 0,
-    "seen": {"woebbe": 0, "cursor": 0},
-    "cycle": 0,
-    "max_cycles": 0,
-    "deadline_utc": None,
-    "halted": True,
-    "session_started_utc": None,
-    "last_reason": "never started",
+DEFAULT_CONFIG: dict = {
+    "planner": "planner",
+    "executor": "executor",
+    "python": "python",
+    "gate": [],
+    "limits": {"max_minutes": 240, "max_cycles": 30},
+    "max_body_bytes": 200_000,
 }
+
+# Which statuses each role may post. The executor never assigns work; the planner never
+# reports completion. Cycles are counted on executor DONE/BLOCKED.
+PLANNER_STATUSES = ("READY", "NOTE", "ACK")
+EXECUTOR_STATUSES = ("DONE", "BLOCKED", "ACK", "NOTE")
+ALL_STATUSES = ("READY", "DONE", "BLOCKED", "ACK", "NOTE")
+
+
+def load_config() -> dict:
+    cfg = json.loads(json.dumps(DEFAULT_CONFIG))
+    if os.path.exists(CONFIG):
+        with open(CONFIG, encoding="utf-8") as fh:
+            user = json.load(fh)
+        limits = dict(cfg["limits"], **(user.get("limits") or {}))
+        cfg.update(user)
+        cfg["limits"] = limits
+    if cfg["planner"] == cfg["executor"]:
+        raise SystemExit("config.json: planner and executor must have different names")
+    return cfg
+
+
+CFG = load_config()
+PLANNER = CFG["planner"]
+EXECUTOR = CFG["executor"]
+SIDES = (PLANNER, EXECUTOR)
+OTHER = {PLANNER: EXECUTOR, EXECUTOR: PLANNER}
 
 
 def utcnow() -> _dt.datetime:
-    return _dt.datetime.now(_dt.UTC)
+    # timezone.utc, not datetime.UTC: the latter needs Python 3.11 and the kit supports 3.10.
+    return _dt.datetime.now(_dt.timezone.utc)
 
 
 def iso(ts: _dt.datetime) -> str:
@@ -51,14 +81,27 @@ def inbox(side: str) -> str:
     return os.path.join(HERE, f"to_{side}.md")
 
 
+def default_state() -> dict:
+    return {
+        "seq": 0,
+        "seen": {side: 0 for side in SIDES},
+        "cycle": 0,
+        "max_cycles": 0,
+        "deadline_utc": None,
+        "halted": True,
+        "session_started_utc": None,
+        "last_reason": "never started",
+    }
+
+
 # ---------------------------------------------------------------- state io
-# No lock file: the Woebbe side reaches this folder through a bridge that cannot delete
-# files, so a lock could never be released. Instead every write re-reads the file and
-# merges monotonic fields (seq, cycle, seen) with max(), which is safe for a two-party,
-# human-paced channel.
+# No lock file: one side may reach this folder through a bridge that cannot delete files, so a
+# lock could never be released. Every write re-reads the file and merges the monotonic fields
+# (seq, cycle, seen) with max(), which is safe for a two-party, human-paced channel.
 def read_state() -> dict:
+    base = default_state()
     if not os.path.exists(STATE):
-        return dict(DEFAULT_STATE, seen=dict(DEFAULT_STATE["seen"]))
+        return base
     for _ in range(5):
         try:
             with open(STATE, encoding="utf-8") as fh:
@@ -67,11 +110,11 @@ def read_state() -> dict:
         except (json.JSONDecodeError, OSError):
             time.sleep(0.1)
     else:
-        return dict(DEFAULT_STATE, seen=dict(DEFAULT_STATE["seen"]))
-    out = dict(DEFAULT_STATE, seen=dict(DEFAULT_STATE["seen"]))
-    out.update(s)
-    out["seen"] = dict(DEFAULT_STATE["seen"], **(s.get("seen") or {}))
-    return out
+        # Unreadable state is treated as halted: a corrupt file must never open a session.
+        return base
+    base.update(s)
+    base["seen"] = dict(default_state()["seen"], **(s.get("seen") or {}))
+    return base
 
 
 def write_state(state: dict) -> None:
@@ -82,7 +125,7 @@ def write_state(state: dict) -> None:
 
 
 def log_max_seq() -> int:
-    """Highest seq present in log/ — lets seq self-heal if state.json is lost."""
+    """Highest seq present in log/, so seq self-heals if state.json is lost."""
     best = 0
     try:
         for name in os.listdir(LOGDIR):
@@ -97,17 +140,18 @@ def log_max_seq() -> int:
 def _merge(mine: dict, disk: dict) -> dict:
     out = dict(disk)
     out.update(mine)
-    # halted is sticky-true across a merge: a concurrent `session stop` must never be
-    # undone by a writer holding a stale halted=False (Fable review A-3).
+    # halted is sticky-true across a merge: a concurrent `session stop` must never be undone
+    # by a writer holding a stale halted=False.
     out["halted"] = bool(mine.get("halted", True)) or bool(disk.get("halted", True))
     out["seq"] = max(int(mine.get("seq", 0)), int(disk.get("seq", 0)))
     out["cycle"] = max(int(mine.get("cycle", 0)), int(disk.get("cycle", 0)))
+    names = set(mine.get("seen") or {}) | set(disk.get("seen") or {}) | set(SIDES)
     out["seen"] = {
         side: max(
             int((mine.get("seen") or {}).get(side, 0)),
             int((disk.get("seen") or {}).get(side, 0)),
         )
-        for side in SIDES
+        for side in names
     }
     return out
 
@@ -121,7 +165,7 @@ def update_state(fn, monotonic: bool = True):
 
 # ------------------------------------------------------------ session gate
 def halt_active() -> bool:
-    """HALT is active when the file exists and has not been retired with a `cleared` marker."""
+    """HALT is active when the file exists and its first line does not start with `cleared`."""
     if not os.path.exists(HALTFILE):
         return False
     try:
@@ -132,24 +176,33 @@ def halt_active() -> bool:
 
 
 def closed_reason(state: dict) -> str | None:
-    """Return a human reason if the session is closed, else None."""
+    """Return a human-readable reason if the session is closed, else None.
+
+    Fails closed: a session that is marked running but has no cycle cap, no deadline, or a
+    deadline that cannot be read is treated as closed.
+    """
     if halt_active():
         return "HALT file present"
     if state.get("halted", True):
         return "session not started (halted)"
-    mc = int(state.get("max_cycles") or 0)
-    if mc and int(state.get("cycle", 0)) >= mc:
-        return f"cycle cap reached ({state['cycle']}/{mc})"
+    try:
+        mc = int(state.get("max_cycles") or 0)
+        cycle = int(state.get("cycle", 0))
+    except (TypeError, ValueError):
+        return "cycle fields unreadable"
+    if mc <= 0:
+        return "no cycle cap set (unlimited sessions are not allowed)"
+    if cycle >= mc:
+        return f"cycle cap reached ({cycle}/{mc})"
     dl = state.get("deadline_utc")
-    if dl:
-        try:
-            deadline = _dt.datetime.strptime(dl, "%Y-%m-%dT%H:%M:%SZ").replace(
-                tzinfo=_dt.UTC
-            )
-        except ValueError:
-            return None
-        if utcnow() >= deadline:
-            return f"time budget expired at {dl}"
+    if not dl:
+        return "no deadline set"
+    try:
+        deadline = _dt.datetime.strptime(dl, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=_dt.timezone.utc)
+    except (TypeError, ValueError):
+        return f"deadline unreadable ({dl!r})"
+    if utcnow() >= deadline:
+        return f"time budget expired at {dl}"
     return None
 
 
@@ -171,12 +224,12 @@ def parse(path: str) -> dict | None:
     end = text.find(HDR_CLOSE)
     if end == -1:
         return None
-    hdr = {}
-    for line in text[len(HDR_OPEN):end].splitlines():
+    hdr: dict = {}
+    for line in text[len(HDR_OPEN) : end].splitlines():
         if ":" in line:
             k, _, v = line.partition(":")
             hdr[k.strip()] = v.strip()
-    hdr["body"] = text[end + len(HDR_CLOSE):].lstrip("\n")
+    hdr["body"] = text[end + len(HDR_CLOSE) :].lstrip("\n")
     hdr["raw"] = text
     try:
         hdr["seq"] = int(hdr.get("seq", 0))
@@ -186,6 +239,15 @@ def parse(path: str) -> dict | None:
 
 
 def cmd_post(args) -> int:
+    sender = args.as_side
+    allowed = PLANNER_STATUSES if sender == PLANNER else EXECUTOR_STATUSES
+    if args.status not in allowed:
+        print(
+            f"POST_REFUSED: {sender} may post {', '.join(allowed)}, not {args.status}",
+            file=sys.stderr,
+        )
+        return 2
+
     if args.stdin:
         body = sys.stdin.read()
     elif args.body_file:
@@ -195,33 +257,42 @@ def cmd_post(args) -> int:
         print("post: need --stdin or --body-file", file=sys.stderr)
         return 2
 
-    sender = args.as_side
-    target = OTHER[sender]
+    cap = int(CFG.get("max_body_bytes") or 0)
+    size = len(body.encode("utf-8"))
+    if cap and size > cap:
+        print(
+            f"POST_REFUSED: body is {size} bytes, over the {cap}-byte cap. "
+            "Put large output in a file and cite its path.",
+            file=sys.stderr,
+        )
+        return 2
 
+    target = OTHER[sender]
     reason = closed_reason(read_state())
     if reason and args.status == "READY":
-        # New tasks cannot enter a closed session (Fable review A-2). DONE/BLOCKED/ACK/NOTE
-        # still post so completed work is never stranded by a deadline expiring mid-run.
+        # New tasks cannot enter a closed session. DONE/BLOCKED/ACK/NOTE still post so finished
+        # work is never stranded by a deadline that expired mid-task.
         print(f"POST_REFUSED (READY into closed session): {reason}")
         return 3
     if reason:
-        print(f"WARNING: session closed ({reason}); posting {args.status} anyway so the reply is not lost")
+        print(f"WARNING: session closed ({reason}); posting {args.status} so the reply is not lost")
 
     def bump(s):
         s["seq"] = max(int(s.get("seq", 0)), log_max_seq()) + 1
-        if sender == "cursor" and args.status in ("DONE", "BLOCKED"):
+        if sender == EXECUTOR and args.status in ("DONE", "BLOCKED"):
             s["cycle"] = int(s.get("cycle", 0)) + 1
         return (s["seq"], s["cycle"], s.get("max_cycles", 0))
 
     seq, cycle, max_cycles = update_state(bump)
     ts = iso(utcnow())
+    subject = (args.subject or "(none)").replace("\n", " ")
     header = (
         f"{HDR_OPEN}\n"
         f"seq: {seq}\n"
         f"from: {sender}\n"
         f"to: {target}\n"
         f"status: {args.status}\n"
-        f"subject: {args.subject or '(none)'}\n"
+        f"subject: {subject}\n"
         f"cycle: {cycle}\n"
         f"ts: {ts}\n"
         f"{HDR_CLOSE}\n\n"
@@ -258,17 +329,18 @@ def cmd_watch(args) -> int:
         msg = parse(path)
         seen = int(state.get("seen", {}).get(side, 0))
         pending = bool(msg and msg["seq"] > seen)
-        # Closed-session rule (Fable review A-2): closure is checked BEFORE delivery, so
-        # the transport refuses to hand new work to cursor once the session is closed.
-        # woebbe may still collect one final pending reply (with a banner), so a DONE that
-        # lands exactly on the cycle cap is not stranded; the next watch returns 3.
-        if reason and (side == "cursor" or not pending):
+        # Closure is checked BEFORE delivery, so a closed session never hands the executor new
+        # work. The planner may still collect one final pending reply, so a DONE that lands
+        # exactly on the cycle cap is not stranded; the next watch returns 3.
+        if reason and (side == EXECUTOR or not pending):
             print(f"SESSION_CLOSED: {reason}")
             return 3
         if pending:
+
             def mark(s, _seq=msg["seq"]):
                 s.setdefault("seen", {})[side] = _seq
                 return None
+
             update_state(mark)
             if reason:
                 print(f"SESSION_CLOSED: {reason} (final pending message delivered below)")
@@ -285,6 +357,19 @@ def cmd_watch(args) -> int:
 
 def cmd_session(args) -> int:
     if args.action == "start":
+        limits = CFG["limits"]
+        max_min = int(limits["max_minutes"])
+        max_cyc = int(limits["max_cycles"])
+        problems = []
+        if args.minutes is None or not 1 <= args.minutes <= max_min:
+            problems.append(f"--minutes must be between 1 and {max_min}")
+        if args.max_cycles is None or not 1 <= args.max_cycles <= max_cyc:
+            problems.append(f"--max-cycles must be between 1 and {max_cyc}")
+        if problems:
+            print("SESSION_REFUSED: " + "; ".join(problems), file=sys.stderr)
+            print("(Ceilings live in config.json under limits.)", file=sys.stderr)
+            return 2
+
         with open(HALTFILE, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(f"cleared {iso(utcnow())}\n")
         end = utcnow() + _dt.timedelta(minutes=args.minutes)
@@ -299,7 +384,7 @@ def cmd_session(args) -> int:
             return None
 
         update_state(start, monotonic=False)
-        print(f"SESSION STARTED until {iso(end)} ({args.minutes} min), max_cycles={args.max_cycles or 'unlimited'}")
+        print(f"SESSION STARTED until {iso(end)} ({args.minutes} min), max_cycles={args.max_cycles}")
         return 0
 
     if args.action == "stop":
@@ -321,24 +406,26 @@ def cmd_status(args) -> int:
     s = read_state()
     s["closed_reason"] = closed_reason(s)
     s["now_utc"] = iso(utcnow())
+    s["roles"] = {"planner": PLANNER, "executor": EXECUTOR}
+    s["limits"] = CFG["limits"]
     for side in SIDES:
         m = parse(inbox(side))
         s[f"inbox_{side}"] = (
             {"seq": m["seq"], "from": m.get("from"), "status": m.get("status"), "subject": m.get("subject")}
-            if m else None
+            if m
+            else None
         )
     print(json.dumps(s, indent=2, sort_keys=True))
     return 0
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="mbx")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sp = sub.add_parser("post")
     sp.add_argument("--as", dest="as_side", choices=SIDES, required=True)
-    sp.add_argument("--status", default="READY",
-                    choices=["READY", "DONE", "BLOCKED", "ACK", "NOTE"])
+    sp.add_argument("--status", default="READY", choices=ALL_STATUSES)
     sp.add_argument("--subject", default="")
     sp.add_argument("--body-file")
     sp.add_argument("--stdin", action="store_true")
@@ -352,14 +439,17 @@ def main() -> int:
 
     ss = sub.add_parser("session")
     ss.add_argument("action", choices=["start", "stop"])
-    ss.add_argument("--minutes", type=int, default=60)
-    ss.add_argument("--max-cycles", type=int, default=0)
+    ss.add_argument("--minutes", type=int)
+    ss.add_argument("--max-cycles", type=int)
     ss.set_defaults(func=cmd_session)
 
     st = sub.add_parser("status")
     st.set_defaults(func=cmd_status)
+    return p
 
-    args = p.parse_args()
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     return args.func(args)
 
 
